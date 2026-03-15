@@ -375,6 +375,82 @@
   .upload-status.error { color: var(--red); }
   .upload-status.success { color: var(--green); }
 
+  /* ---- Calculator ---- */
+  .calc-category {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .calc-category-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .calc-category-total {
+    font-family: 'Fira Code', monospace;
+    font-size: 12px;
+    color: var(--amber);
+  }
+  .calc-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    transition: background 150ms;
+  }
+  .calc-item:last-child { border-bottom: none; }
+  .calc-item:hover { background: var(--blue-subtle); margin: 0 -20px; padding: 8px 20px; }
+  .calc-item input[type=checkbox] {
+    width: 18px; height: 18px;
+    accent-color: var(--blue-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .calc-item-name {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text-primary);
+  }
+  .calc-item-price {
+    font-family: 'Fira Code', monospace;
+    font-size: 13px;
+    color: var(--text-secondary);
+    min-width: 80px;
+    text-align: right;
+  }
+  .calc-item input:checked ~ .calc-item-name { color: var(--blue-light); }
+  .calc-item input:checked ~ .calc-item-price { color: var(--amber); }
+  .calc-grand-total {
+    font-family: 'Fira Code', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--amber);
+    padding: 4px 12px;
+    background: var(--amber-glow);
+    border-radius: 8px;
+  }
+  .calc-item-qty {
+    width: 40px;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-family: 'Fira Code', monospace;
+    font-size: 12px;
+    text-align: center;
+    padding: 4px;
+  }
+
   /* ---- Loading ---- */
   .loading-state {
     display: flex;
@@ -460,7 +536,7 @@ function checkAuth(){
     if(hash===h){
       document.getElementById('auth-gate').style.display='none';
       document.getElementById('main-app').style.display='block';
-      sessionStorage.setItem('gnuvetoph-auth','1');
+      localStorage.setItem('gnuvetoph-auth','1');
     } else {
       document.getElementById('auth-error').style.display='block';
       document.getElementById('auth-input').style.borderColor='var(--red)';
@@ -468,7 +544,7 @@ function checkAuth(){
   });
   return false;
 }
-if(sessionStorage.getItem('gnuvetoph-auth')==='1'){
+if(localStorage.getItem('gnuvetoph-auth')==='1'){
   document.getElementById('auth-gate').style.display='none';
   document.addEventListener('DOMContentLoaded',()=>{document.getElementById('main-app').style.display='block';});
 }
@@ -501,6 +577,7 @@ if(sessionStorage.getItem('gnuvetoph-auth')==='1'){
     <div class="header-actions">
       <nav class="nav-tabs" role="tablist">
         <button class="nav-tab active" role="tab" aria-selected="true" onclick="switchTab('dashboard')">Dashboard</button>
+        <button class="nav-tab" role="tab" aria-selected="false" onclick="switchTab('calculator')">Calculator</button>
         <button class="nav-tab" role="tab" aria-selected="false" onclick="switchTab('upload')">Upload</button>
       </nav>
     </div>
@@ -603,9 +680,28 @@ if(sessionStorage.getItem('gnuvetoph-auth')==='1'){
         </div>
       </div>
 
+      <div class="table-card" id="fee-table-section" style="display:none">
+        <h3>Surgery Fee Schedule <span style="font-size:11px;color:var(--text-secondary);font-weight:400;margin-left:8px;">Google Sheets 연동</span></h3>
+        <table id="feeTable"></table>
+      </div>
+
       <div class="table-card">
         <h3>Frequent Patients</h3>
         <table id="frequentTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calculator -->
+  <div id="tab-calculator" class="tab-content">
+    <div class="chart-card" style="margin-bottom:24px">
+      <div class="chart-header">
+        <span class="chart-title">Surgery Cost Calculator</span>
+        <span class="chart-badge" id="calc-total">0원</span>
+      </div>
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">항목을 체크하면 자동으로 합산됩니다. 구글시트에서 수가 수정 시 실시간 반영.</p>
+      <div id="calc-items" style="display:grid;gap:20px;">
+        <div class="loading-text" style="color:var(--text-secondary)">Loading fee data...</div>
       </div>
     </div>
   </div>
@@ -1003,7 +1099,128 @@ async function render() {
     top.map(([,p])=>`<tr><td style="font-weight:500">${p.name||'-'}</td><td>${p.species||'-'}</td><td>${p.breed||'-'}</td><td><span class="visit-bar" style="width:${p.count/maxCount*80}px"></span><span style="font-family:'Fira Code',monospace;font-size:12px">${p.count}</span></td><td>${[...p.diagnoses].slice(0,3).map(d=>`<span class="dx-tag">${d}</span>`).join('')}</td></tr>`
     ).join('')
   }</tbody>`;
+
+  // Load surgery revenue from Google Sheets
+  renderRevenue(records);
 }
+
+// ---- Surgery Revenue from Google Sheets ----
+const GSHEET_ID = '1uf88WZ1sD8smTmiz85iz9LH1xkrIX29fM-Bd6_x0GHA';
+
+async function renderRevenue(records) {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${GSHEET_ID}/gviz/tq?tqx=out:json&sheet=수가표`;
+    const res = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+)\)/)[1]);
+
+    const rows = json.table.rows;
+    const feeTable = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const cells = rows[i].c;
+      const name = cells[0]?.v;
+      const key = cells[1]?.v;
+      const preExam = cells[2]?.v ? parseInt(cells[2].v) : 0;
+      const totalFee = cells[3]?.v ? parseInt(cells[3].v) : 0;
+      const withMeds = cells[4]?.v ? parseInt(cells[4].v) : 0;
+      const note = cells[5]?.v || '';
+
+      if (!name || name === '수술명') continue;
+      feeTable.push({ name, key, preExam, totalFee, withMeds, note });
+    }
+
+    // Fee table only
+    document.getElementById('fee-table-section').style.display = '';
+    document.getElementById('feeTable').innerHTML = `<thead><tr><th>수술명</th><th>술전검사</th><th>수술 총계</th><th>퇴원약 포함</th><th>비고</th></tr></thead><tbody>${
+      feeTable.map(f =>
+        `<tr><td style="font-weight:500">${f.name}</td><td style="font-family:'Fira Code',monospace;font-size:12px">${f.preExam ? (f.preExam/10000).toFixed(1)+'만' : '-'}</td><td style="font-family:'Fira Code',monospace;font-size:12px">${f.totalFee ? (f.totalFee/10000).toFixed(1)+'만' : '-'}</td><td style="font-family:'Fira Code',monospace;font-size:12px;color:var(--amber)">${f.withMeds ? (f.withMeds/10000).toFixed(1)+'만' : '-'}</td><td style="color:var(--text-secondary);font-size:12px">${f.note}</td></tr>`
+      ).join('')
+    }</tbody>`;
+
+  } catch(e) {
+    console.warn('Fee data load failed:', e);
+  }
+}
+
+// ---- Calculator ----
+async function loadCalculator() {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${GSHEET_ID}/gviz/tq?tqx=out:json&sheet=항목별`;
+    const res = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+)\)/)[1]);
+
+    const categories = {};
+    const catOrder = ['술전검사','술전일반검사','마취','수술비','수술소모품','봉합사','퇴원약'];
+
+    for (const row of json.table.rows) {
+      const c = row.c;
+      const name = c[0]?.v;
+      const cat = c[1]?.v;
+      const price = c[2]?.v ? parseInt(c[2].v) : 0;
+      const note = c[3]?.v || '';
+      if (!name || name === '항목명') continue;
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push({ name, price, note });
+    }
+
+    const container = document.getElementById('calc-items');
+    container.innerHTML = '';
+
+    for (const cat of catOrder) {
+      if (!categories[cat]) continue;
+      const div = document.createElement('div');
+      div.className = 'calc-category';
+      div.innerHTML = `<div class="calc-category-title"><span>${cat}</span><span class="calc-category-total" id="cat-total-${cat.replace(/\s/g,'')}">0</span></div>`;
+
+      for (const item of categories[cat]) {
+        const label = document.createElement('label');
+        label.className = 'calc-item';
+        label.innerHTML = `
+          <input type="checkbox" data-price="${item.price}" data-cat="${cat}" onchange="calcUpdate()">
+          <input type="number" class="calc-item-qty" value="1" min="1" max="99" data-price="${item.price}" data-cat="${cat}" onchange="calcUpdate()" onclick="event.stopPropagation()">
+          <span class="calc-item-name">${item.name}${item.note ? ' <span style="color:var(--text-tertiary);font-size:11px">('+item.note+')</span>' : ''}</span>
+          <span class="calc-item-price">${(item.price/10000).toFixed(1)}만</span>
+        `;
+        div.appendChild(label);
+      }
+      container.appendChild(div);
+    }
+  } catch(e) {
+    document.getElementById('calc-items').innerHTML = '<p style="color:var(--red)">수가 데이터 로드 실패</p>';
+    console.warn('Calculator load failed:', e);
+  }
+}
+
+function calcUpdate() {
+  let total = 0;
+  const catTotals = {};
+
+  document.querySelectorAll('.calc-item input[type=checkbox]:checked').forEach(cb => {
+    const price = parseInt(cb.dataset.price);
+    const cat = cb.dataset.cat;
+    const qtyInput = cb.parentElement.querySelector('.calc-item-qty');
+    const qty = parseInt(qtyInput?.value) || 1;
+    const subtotal = price * qty;
+    total += subtotal;
+    catTotals[cat] = (catTotals[cat] || 0) + subtotal;
+  });
+
+  document.getElementById('calc-total').className = 'calc-grand-total';
+  document.getElementById('calc-total').textContent = total > 0 ? `${(total/10000).toLocaleString()}만원` : '0원';
+
+  // Update category totals
+  document.querySelectorAll('[id^="cat-total-"]').forEach(el => {
+    const cat = el.id.replace('cat-total-', '');
+    const matchedCat = Object.keys(catTotals).find(c => c.replace(/\s/g, '') === cat);
+    el.textContent = matchedCat ? `${(catTotals[matchedCat]/10000).toLocaleString()}만` : '';
+  });
+}
+
+// Load calculator when tab is first opened
+let calcLoaded = false;
+const origSwitchTab = switchTab;
 
 // ---- Upload ----
 let pendingRecords = [];
@@ -1074,6 +1291,7 @@ function switchTab(name) {
   btn.classList.add('active');
   btn.setAttribute('aria-selected','true');
   document.getElementById(`tab-${name}`).classList.add('active');
+  if (name === 'calculator' && !calcLoaded) { calcLoaded = true; loadCalculator(); }
 }
 
 render();
