@@ -1481,13 +1481,13 @@ function calcUpdate() {
   });
 
   // Update total display
-  document.getElementById('calc-total').textContent = total > 0 ? `${(total/10000).toLocaleString()}만원` : '0원';
+  document.getElementById('calc-total').textContent = total > 0 ? `${Math.floor(total/10000).toLocaleString()}만원` : '0원';
 
   // Update right-side category totals
   document.querySelectorAll('[id^="cat-total-"]').forEach(el => {
     const cat = el.id.replace('cat-total-', '');
     const matchedCat = Object.keys(catTotals).find(c => c.replace(/\s/g, '') === cat);
-    el.textContent = matchedCat ? `${(catTotals[matchedCat]/10000).toLocaleString()}만` : '';
+    el.textContent = matchedCat ? `${Math.floor(catTotals[matchedCat]/10000).toLocaleString()}만` : '';
   });
 
   // Update left-side estimate panel
@@ -1509,12 +1509,12 @@ function calcUpdate() {
   for (const cat of catOrder) {
     if (!catItems[cat]) continue;
     html += `<div class="calc-est-cat">
-      <div class="calc-est-cat-title"><span>${cat}</span><span class="calc-est-cat-total">${(catTotals[cat]/10000).toLocaleString()}만</span></div>`;
+      <div class="calc-est-cat-title"><span>${cat}</span><span class="calc-est-cat-total">${Math.floor(catTotals[cat]/10000).toLocaleString()}만</span></div>`;
     for (const item of catItems[cat]) {
       html += `<div class="calc-est-item">
         <span class="calc-est-item-name">${item.name}</span>
         <span class="calc-est-item-qty">${item.qty > 1 ? 'x'+item.qty : ''}</span>
-        <span class="calc-est-item-price">${(item.subtotal/10000).toLocaleString()}만</span>
+        <span class="calc-est-item-price">${Math.floor(item.subtotal/10000).toLocaleString()}만</span>
       </div>`;
     }
     html += `</div>`;
