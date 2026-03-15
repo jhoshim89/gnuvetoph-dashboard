@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VetOph Clinical Records</title>
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" as="style">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #050508;
+    --surface-1: #0c0d12;
+    --surface-2: #12141c;
+    --surface-3: #1a1c28;
+    --border: rgba(255,255,255,0.06);
+    --border-hover: rgba(255,255,255,0.12);
+    --text-primary: #e8eaf0;
+    --text-secondary: #6b7280;
+    --text-tertiary: #3f4553;
+    --blue-primary: #2563EB;
+    --blue-light: #3b82f6;
+    --blue-glow: rgba(37,99,235,0.15);
+    --blue-subtle: rgba(37,99,235,0.08);
+    --amber: #F97316;
+    --amber-glow: rgba(249,115,22,0.15);
+    --green: #10b981;
+    --green-subtle: rgba(16,185,129,0.12);
+    --red: #ef4444;
+    --red-subtle: rgba(239,68,68,0.12);
+    --chart-1: #2563EB;
+    --chart-2: #6366f1;
+    --chart-3: #8b5cf6;
+    --chart-4: #a855f7;
+    --chart-5: #d946ef;
+    --chart-6: #ec4899;
+    --chart-7: #f43f5e;
+    --chart-8: #f97316;
+    --chart-9: #eab308;
+    --chart-10: #22c55e;
+    --chart-11: #14b8a6;
+    --chart-12: #06b6d4;
+    --chart-13: #3b82f6;
+    --chart-14: #818cf8;
+    --chart-15: #c084fc;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Fira Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 32px 40px;
+  }
+
+  /* ---- Header ---- */
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-group { display: flex; align-items: center; gap: 16px; }
+  .logo-mark {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 24px var(--blue-glow), inset 0 1px 0 rgba(255,255,255,0.06);
+    position: relative;
+    overflow: hidden;
+  }
+  .logo-mark::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: -1px; right: -1px; bottom: -1px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--blue-primary), var(--chart-3), var(--amber));
+    opacity: 0.4;
+    z-index: 0;
+  }
+  .logo-mark svg { position: relative; z-index: 1; }
+  .logo-text h1 {
+    font-family: 'Fira Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: var(--text-primary);
+  }
+  .logo-text p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+  .header-actions { display: flex; gap: 8px; }
+
+  /* ---- Nav Tabs ---- */
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    width: fit-content;
+  }
+  .nav-tab {
+    padding: 8px 20px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: 'Fira Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 200ms ease;
+    user-select: none;
+  }
+  .nav-tab:hover { color: var(--text-primary); background: var(--surface-2); }
+  .nav-tab:focus-visible { outline: 2px solid var(--blue-primary); outline-offset: 2px; }
+  .nav-tab.active {
+    background: var(--blue-primary);
+    color: white;
+    box-shadow: 0 2px 8px var(--blue-glow);
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeIn 300ms ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ---- Summary Cards ---- */
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 200ms ease, box-shadow 200ms ease;
+  }
+  .stat-card:hover {
+    border-color: var(--border-hover);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--blue-primary), transparent);
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+  .stat-card:hover::before { opacity: 1; }
+  .stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 12px;
+  }
+  .stat-value {
+    font-family: 'Fira Code', monospace;
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-sub {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 8px;
+    font-family: 'Fira Code', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-card.accent .stat-value {
+    background: linear-gradient(135deg, var(--amber), #fbbf24);
+    -webkit-background-clip: text; background-clip: text;
+  }
+  .stat-card.accent::before {
+    background: linear-gradient(90deg, var(--amber), transparent);
+  }
+
+  /* ---- Chart Cards ---- */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  .chart-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    transition: border-color 200ms ease;
+  }
+  .chart-card:hover { border-color: var(--border-hover); }
+  .chart-card.span-2 { grid-column: span 2; }
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .chart-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+  }
+  .chart-badge {
+    font-family: 'Fira Code', monospace;
+    font-size: 11px;
+    color: var(--blue-light);
+    background: var(--blue-subtle);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  canvas { max-height: 320px; }
+
+  /* ---- Table ---- */
+  .table-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 32px;
+    overflow-x: auto;
+  }
+  .table-card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 12px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-primary);
+  }
+  tr:hover td { background: var(--blue-subtle); }
+  .visit-bar {
+    display: inline-block;
+    height: 6px;
+    background: linear-gradient(90deg, var(--blue-primary), var(--chart-3));
+    border-radius: 3px;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+  .dx-tag {
+    display: inline-block;
+    font-size: 11px;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin: 1px 2px;
+    font-family: 'Fira Code', monospace;
+  }
+
+  /* ---- Upload ---- */
+  .upload-zone {
+    background: var(--surface-2);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: 60px 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 250ms ease;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--blue-primary);
+    background: var(--blue-subtle);
+  }
+  .upload-zone input { display: none; }
+  .upload-icon {
+    width: 56px; height: 56px;
+    margin: 0 auto 20px;
+    border-radius: 14px;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .upload-icon svg { width: 24px; height: 24px; color: var(--blue-light); }
+  .upload-zone h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .upload-zone p {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .upload-preview {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-top: 20px;
+  }
+  .upload-info {
+    font-size: 14px;
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--blue-primary);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-family: 'Fira Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 200ms ease;
+    min-height: 44px;
+  }
+  .btn-primary:hover { background: var(--blue-light); box-shadow: 0 4px 16px var(--blue-glow); }
+  .btn-primary:focus-visible { outline: 2px solid var(--blue-primary); outline-offset: 2px; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .upload-status {
+    margin-top: 16px;
+    font-size: 13px;
+    font-family: 'Fira Code', monospace;
+  }
+  .upload-status.error { color: var(--red); }
+  .upload-status.success { color: var(--green); }
+
+  /* ---- Loading ---- */
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px;
+    gap: 20px;
+  }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--surface-3);
+    border-top-color: var(--blue-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; color: var(--text-secondary); }
+
+  /* ---- Footer ---- */
+  footer {
+    text-align: center;
+    padding: 24px 0;
+    border-top: 1px solid var(--border);
+    margin-top: 16px;
+  }
+  footer p {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-family: 'Fira Code', monospace;
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 1024px) {
+    .charts-grid { grid-template-columns: 1fr; }
+    .chart-card.span-2 { grid-column: span 1; }
+  }
+  @media (max-width: 768px) {
+    .app { padding: 16px; }
+    header { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .summary-row { grid-template-columns: repeat(2, 1fr); }
+    .stat-value { font-size: 28px; }
+    canvas { max-height: 260px; }
+  }
+  @media (max-width: 480px) {
+    .summary-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo-group">
+      <div class="logo-mark">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Stylized eye icon -->
+          <ellipse cx="14" cy="14" rx="12" ry="8" stroke="white" stroke-width="1.5" fill="none" opacity="0.9"/>
+          <circle cx="14" cy="14" r="4.5" fill="url(#iris-grad)" />
+          <circle cx="14" cy="14" r="2" fill="#050508"/>
+          <circle cx="12.5" cy="12.5" r="1" fill="white" opacity="0.7"/>
+          <defs>
+            <linearGradient id="iris-grad" x1="10" y1="10" x2="18" y2="18">
+              <stop offset="0%" stop-color="#3b82f6"/>
+              <stop offset="100%" stop-color="#8b5cf6"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <h1>GNUVETOPH <span style="font-weight:300;color:var(--text-secondary);font-size:16px">Clinical Records</span></h1>
+        <p>경상국립대학교 수의안과 진료기록 대시보드</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <nav class="nav-tabs" role="tablist">
+        <button class="nav-tab active" role="tab" aria-selected="true" onclick="switchTab('dashboard')">Dashboard</button>
+        <button class="nav-tab" role="tab" aria-selected="false" onclick="switchTab('upload')">Upload</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Dashboard -->
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="loading-state" id="loading">
+      <div class="spinner"></div>
+      <span class="loading-text">Loading clinical records...</span>
+    </div>
+    <div id="dashboard-content" style="display:none">
+      <div class="summary-row" id="summary-cards"></div>
+
+      <div class="charts-grid">
+        <div class="chart-card span-2">
+          <div class="chart-header">
+            <span class="chart-title">Monthly Case Volume</span>
+            <span class="chart-badge" id="badge-period"></span>
+          </div>
+          <canvas id="monthlyChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header"><span class="chart-title">Species Distribution</span></div>
+          <canvas id="speciesChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><span class="chart-title">First Visit vs Revisit</span></div>
+          <canvas id="visitTypeChart"></canvas>
+        </div>
+
+        <div class="chart-card span-2">
+          <div class="chart-header">
+            <span class="chart-title">Top Diagnoses</span>
+            <span class="chart-badge" id="badge-dx-count"></span>
+          </div>
+          <canvas id="diagnosisChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header"><span class="chart-title">Top Breeds</span></div>
+          <canvas id="breedChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><span class="chart-title">Prescription Frequency</span></div>
+          <canvas id="rxChart"></canvas>
+        </div>
+
+        <div class="chart-card span-2">
+          <div class="chart-header">
+            <span class="chart-title">Surgical Procedures</span>
+            <span class="chart-badge" id="badge-sx-count"></span>
+          </div>
+          <canvas id="surgeryChart"></canvas>
+        </div>
+      </div>
+
+      <!-- New insight sections -->
+      <div class="charts-grid">
+        <div class="chart-card span-2">
+          <div class="chart-header">
+            <span class="chart-title">Age Distribution</span>
+            <span class="chart-badge" id="badge-age"></span>
+          </div>
+          <canvas id="ageChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header"><span class="chart-title">Gender Distribution</span></div>
+          <canvas id="genderChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><span class="chart-title">Gender x Diagnosis</span></div>
+          <canvas id="genderDxChart"></canvas>
+        </div>
+
+        <div class="chart-card span-2">
+          <div class="chart-header">
+            <span class="chart-title">Breed x Diagnosis Predisposition</span>
+            <span class="chart-badge">Top 8 breeds x Top 8 dx</span>
+          </div>
+          <canvas id="breedDxHeatmap"></canvas>
+        </div>
+
+        <div class="chart-card span-2">
+          <div class="chart-header">
+            <span class="chart-title">Diagnosis Trend (Monthly)</span>
+            <span class="chart-badge">Top 5 diagnoses</span>
+          </div>
+          <canvas id="dxTrendChart"></canvas>
+        </div>
+
+        <div class="chart-card span-2">
+          <div class="chart-header">
+            <span class="chart-title">Avg Revisits per Diagnosis</span>
+            <span class="chart-badge" id="badge-revisit"></span>
+          </div>
+          <canvas id="revisitChart"></canvas>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <h3>Frequent Patients</h3>
+        <table id="frequentTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload -->
+  <div id="tab-upload" class="tab-content">
+    <div class="upload-zone" id="dropzone">
+      <div class="upload-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/></svg>
+      </div>
+      <h3>Drop Excel file here</h3>
+      <p>or click to browse &middot; .xlsx</p>
+      <input type="file" id="fileInput" accept=".xlsx,.xls">
+    </div>
+    <div id="upload-preview" style="display:none">
+      <div class="upload-preview">
+        <div class="upload-info" id="upload-info"></div>
+        <button class="btn-primary" id="uploadBtn" onclick="doUpload()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/></svg>
+          Upload
+        </button>
+        <div class="upload-status" id="upload-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>GNUVETOPH Clinical Dashboard &middot; Gyeongsang National University &middot; Veterinary Ophthalmology</p>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://wiefsjvmsfqhbgfglqjg.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndpZWZzanZtc2ZxaGJnZmdscWpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODI0MjMsImV4cCI6MjA3MTM1ODQyM30.zIxkdhXcn3YrKGLTWcVqWdDUVfr2wQa_VWAr3Js4g4Y';
+
+const COLORS = ['#2563EB','#6366f1','#8b5cf6','#a855f7','#d946ef','#ec4899','#f43f5e','#f97316','#eab308','#22c55e','#14b8a6','#06b6d4','#3b82f6','#818cf8','#c084fc'];
+
+// ---- Chart.js global config ----
+Chart.defaults.color = '#6b7280';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.04)';
+Chart.defaults.font.family = "'Fira Sans', sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.plugins.tooltip.backgroundColor = '#1a1c28';
+Chart.defaults.plugins.tooltip.borderColor = 'rgba(255,255,255,0.08)';
+Chart.defaults.plugins.tooltip.borderWidth = 1;
+Chart.defaults.plugins.tooltip.cornerRadius = 8;
+Chart.defaults.plugins.tooltip.padding = 12;
+Chart.defaults.plugins.tooltip.titleFont = { family: "'Fira Code', monospace", size: 12, weight: '600' };
+Chart.defaults.plugins.tooltip.bodyFont = { family: "'Fira Sans', sans-serif", size: 12 };
+
+// ---- Normalization ----
+const BREED_MAP = {
+  '몰티즈':'말티즈','poodle':'푸들','실버푸들':'푸들','토이 푸들':'푸들','토이푸들':'푸들','스탠다드푸들':'푸들',
+  'Mix':'믹스','mix':'믹스','혼합':'믹스','시추':'시츄','Shih Tzu':'시츄',
+  '요크셔':'요키','요크셔테리어':'요키','오크셔':'요키','요':'요키','포메라니안':'포메',
+  '코카스파니엘':'코카','프렌치불독':'프렌치 불독','페키':'페키니즈','보스턴테리어':'보스턴 테리어',
+  '닥스훈트':'닥스','스코티시 폴드':'스코티시','스코티시폴드':'스코티시','스코티쉬 폴드':'스코티시',
+  '브리티쉬 숏헤어':'브리티시 숏헤어','데본 렉스':'데본렉스','아비시니안':'아비시니아',
+  'Pug':'퍼그','Siamese':'샴','Coton de tulear':'코튼 드 툴레아',
+};
+const GENDER_MAP = {'Cm':'CM','cm':'CM','cM':'CM','Sf':'SF','sf':'SF','f':'F','Male':'M'};
+function normBreed(b) { return BREED_MAP[b] || b; }
+
+// ---- Extraction ----
+const DRUG_MAP = {
+  'maxi':'maxitrol','max':'maxitrol','maxitrol':'maxitrol','levo':'levofloxacin','levofloxacin':'levofloxacin',
+  'viga':'vigamox','vigamox':'vigamox','oflox':'ofloxacin','oflo':'ofloxacin','ofloxacin':'ofloxacin','ocuflox':'ofloxacin',
+  'pds':'prednisolone','prednisolone':'prednisolone','lotemax':'lotemax',
+  'nac':'NAC','edta':'EDTA','cosopt':'cosopt','simbrinza':'simbrinza','betaxolol':'betaxolol',
+  'optimmune':'optimmune','cyclosporine':'cyclosporine','tacrolimus':'tacrolimus',
+  'serum':'autologous serum','atropine':'atropine','pilocarpine':'pilocarpine',
+  'bronac':'bronac','flurbi':'flurbiprofen',
+  'tobramycin':'tobramycin','moxifloxacin':'moxifloxacin','ciprofloxacin':'ciprofloxacin',
+  'b1':'ofloxacin','b2':'levofloxacin','s1':'maxitrol','s2':'prednisolone',
+  'g1':'cosopt','n1':'bronac','my':'mydriasyl','mp':'mydrin-P',
+  'xalatan':'latanoprost','latanoprost':'latanoprost','trusopt':'dorzolamide','timolol':'timolol',
+  'liposic':'liposic','muro':'muro 128',
+};
+
+const DX_KEYWORDS = [
+  'incipient cataract','immature cataract','mature cataract','hypermature cataract','cataract',
+  'corneal ulcer','ulcer','scced','descemetocele','descementocele','corneal perforation',
+  'kcs','dry eye','keratitis','pigmentary keratitis','pannus',
+  'glaucoma','buphthalmos','uveitis','anterior uveitis','lens induced uveitis',
+  'conjunctivitis','conjuntivitis','epiphora','episcleritis',
+  'lens luxation','anterior lens luxation','posterior lens luxation','pll','all',
+  'eyelid mass','eyelid tumor','eyelid laceration','cherry eye','entropion','ectropion',
+  'distichiasis','ectopic cilia','blepharitis',
+  'retinal detachment','pra','progressive retinal atrophy','sard',
+  'proptosis','phthisis','phthisis bulbi','nuclear sclerosis','iris atrophy','corneal sequestrum',
+  'hyphema','endophthalmitis','symblepharon','dacryocystitis','melanoma',
+  'endothelitis','endothelial degeneration','optic nerve atrophy',
+  'enucleation','enucleated','enulceation',
+  'normal eye','normal',
+].sort((a,b) => b.length - a.length);
+
+const SX_KEYWORDS = [
+  'phacoemulsification','phaco','enucleation','evisceration','cherry eye repair','cherry eye',
+  'grid keratotomy','diamond burr','conjunctival flap','conjunctival graft','corneal graft',
+  'corneoconjunctival transposition','superficial keratectomy',
+  'entropion repair','entropion','eyelid mass removal','eyelid mass','eyelid reconstruction',
+  'cryotherapy','laser','tarsorrhaphy','third eyelid flap','third eyelid','tte','medial canthoplasty',
+  'icle','lens extraction','lens bag implant','parotid duct transposition','proptosis reduction',
+  'iris biopsy','punctum widening','mp-tscpc','mptscpc',
+].sort((a,b) => b.length - a.length);
+
+const DX_NORMALIZE = {
+  'conjuntivitis':'conjunctivitis','descementocele':'descemetocele',
+  'enucleated':'enucleation','enulceation':'enucleation',
+};
+function extractDiagnoses(a) {
+  if (!a) return [];
+  const l = a.toLowerCase(), found = [];
+  for (const dx of DX_KEYWORDS) if (l.includes(dx)) found.push(DX_NORMALIZE[dx]||dx);
+  return [...new Set(found.filter(dx => !found.some(o => o !== dx && o.includes(dx))))];
+}
+function extractDrugs(p) {
+  if (!p) return [];
+  const l = p.toLowerCase(), found = new Set();
+  for (const [k,v] of Object.entries(DRUG_MAP)) {
+    if (new RegExp('\\b'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i').test(l)) found.add(v);
+  }
+  return [...found];
+}
+function extractSurgeries(s) {
+  if (!s) return [];
+  // Strip Sx) prefix and clean
+  let cleaned = s.replace(/^Sx\)\s*/i, '').replace(/^(OD\)|OS\)|OU\))\s*/i, '').trim();
+  const l = cleaned.toLowerCase();
+  if (l==='-'||l===''||l==='nan'||l==='sx) nan') return [];
+  // Skip non-surgery entries
+  if (/^\d+\s*분간/.test(cleaned) || /^loading/i.test(l)) return [];
+  // Fuzzy matches
+  if (l.includes('phaco') && l.includes('iol')) return ['phaco + IOL'];
+  if (l.includes('phaco')) return ['phacoemulsification'];
+  if (/enu[cl]?l?[eu]?[ca]e?[ai]?t/i.test(l) || l.includes('enucleated')) return ['enucleation'];
+  // Typo normalization
+  if (l.includes('cornela')) cleaned = cleaned.replace(/cornela/gi, 'corneal');
+  if (/conjuc?n?tival/i.test(l) && !l.includes('conjunctival')) cleaned = cleaned.replace(/conjuc?n?tival/gi, 'conjunctival');
+  if (/tarsor+a?phy/i.test(l) && !l.includes('tarsorrhaphy')) cleaned = cleaned.replace(/tarsor+a?phy/gi, 'tarsorrhaphy');
+  const found = [];
+  for (const sx of SX_KEYWORDS) if (l.includes(sx)) found.push(sx);
+  const d = found.filter(s => !found.some(o => o!==s && o.includes(s)));
+  return d.length>0 ? d : [cleaned.substring(0,50)];
+}
+
+// ---- Fetch ----
+async function fetchAll() {
+  let all=[], offset=0;
+  while (true) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/clinical_records?select=*&order=visit_date.asc&offset=${offset}&limit=1000`,
+      {headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`}});
+    const d = await r.json();
+    all = all.concat(d);
+    if (d.length<1000) break;
+    offset += 1000;
+  }
+  return all;
+}
+
+// ---- Render ----
+async function render() {
+  const records = await fetchAll();
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('dashboard-content').style.display = 'block';
+
+  const uniquePatients = new Set(records.map(r=>r.chart_number)).size;
+  const allMonths = [...new Set(records.filter(r=>r.visit_date).map(r=>r.visit_date.slice(0,7)))].sort();
+  const latestMonth = allMonths[allMonths.length-1] || '';
+  const latestMonthCount = records.filter(r=>r.visit_date&&r.visit_date.startsWith(latestMonth)).length;
+  const sxCount = records.filter(r=>{const s=(r.surgery||'').trim().toLowerCase();return s&&s!=='-'&&s!=='nan'&&s!=='sx) nan';}).length;
+  const firstCount = records.filter(r=>r.is_first_visit===true).length;
+  const revisitCount = records.filter(r=>r.is_first_visit===false).length;
+
+  document.getElementById('summary-cards').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Cases</div><div class="stat-value">${records.length.toLocaleString()}</div><div class="stat-sub">all records</div></div>
+    <div class="stat-card"><div class="stat-label">Unique Patients</div><div class="stat-value">${uniquePatients}</div><div class="stat-sub">${(records.length/uniquePatients).toFixed(1)} visits/patient avg</div></div>
+    <div class="stat-card accent"><div class="stat-label">This Month</div><div class="stat-value">${latestMonthCount}</div><div class="stat-sub">${latestMonth}</div></div>
+    <div class="stat-card"><div class="stat-label">Surgeries</div><div class="stat-value">${sxCount}</div><div class="stat-sub">${(sxCount*100/records.length).toFixed(1)}% of cases</div></div>
+  `;
+
+  // Monthly
+  const monthly = {};
+  records.forEach(r=>{if(r.visit_date){const m=r.visit_date.slice(0,7);monthly[m]=(monthly[m]||0)+1;}});
+  const months = Object.keys(monthly).sort();
+  document.getElementById('badge-period').textContent = `${months[0]} — ${months[months.length-1]}`;
+  new Chart(document.getElementById('monthlyChart'), {
+    type:'bar',
+    data:{labels:months.map(m=>m.slice(2)),datasets:[{data:months.map(m=>monthly[m]),backgroundColor:months.map((_,i)=>i===months.length-1?'#F97316':'#2563EB'),borderRadius:4,barPercentage:0.7}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.03)'},ticks:{font:{family:"'Fira Code',monospace",size:11}}},x:{grid:{display:false},ticks:{font:{size:10},maxRotation:45}}}}
+  });
+
+  // Species
+  const speciesCount = {};
+  records.forEach(r=>{if(r.species)speciesCount[r.species]=(speciesCount[r.species]||0)+1;});
+  const speciesE = Object.entries(speciesCount).sort((a,b)=>b[1]-a[1]);
+  new Chart(document.getElementById('speciesChart'), {
+    type:'doughnut',
+    data:{labels:speciesE.map(e=>`${e[0]} (${e[1]})`),datasets:[{data:speciesE.map(e=>e[1]),backgroundColor:COLORS,borderWidth:0,hoverOffset:8}]},
+    options:{responsive:true,cutout:'65%',plugins:{legend:{position:'right',labels:{color:'#e8eaf0',padding:10,font:{size:12},usePointStyle:true,pointStyleWidth:8}}}}
+  });
+
+  // Visit type
+  new Chart(document.getElementById('visitTypeChart'), {
+    type:'doughnut',
+    data:{labels:[`초진 (${firstCount})`,`재진 (${revisitCount})`],datasets:[{data:[firstCount,revisitCount],backgroundColor:['#2563EB','#F97316'],borderWidth:0,hoverOffset:8}]},
+    options:{responsive:true,cutout:'65%',plugins:{legend:{position:'right',labels:{color:'#e8eaf0',padding:10,font:{size:12},usePointStyle:true,pointStyleWidth:8}}}}
+  });
+
+  // Diagnosis
+  const dxCount = {};
+  records.forEach(r=>{extractDiagnoses(r.assessment).forEach(dx=>{dxCount[dx]=(dxCount[dx]||0)+1;});});
+  const dxE = Object.entries(dxCount).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  document.getElementById('badge-dx-count').textContent = `${Object.keys(dxCount).length} diagnoses`;
+  new Chart(document.getElementById('diagnosisChart'), {
+    type:'bar',
+    data:{labels:dxE.map(e=>e[0]),datasets:[{data:dxE.map(e=>e[1]),backgroundColor:COLORS,borderRadius:4,barPercentage:0.65}]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.03)'},ticks:{font:{family:"'Fira Code',monospace",size:11}}},y:{grid:{display:false},ticks:{font:{family:"'Fira Code',monospace",size:11},color:'#e8eaf0'}}}}
+  });
+
+  // Breed
+  const breedCount = {};
+  records.forEach(r=>{if(r.breed){const b=normBreed(r.breed);breedCount[b]=(breedCount[b]||0)+1;}});
+  const breedE = Object.entries(breedCount).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  new Chart(document.getElementById('breedChart'), {
+    type:'bar',
+    data:{labels:breedE.map(e=>e[0]),datasets:[{data:breedE.map(e=>e[1]),backgroundColor:'#8b5cf6',borderRadius:4,barPercentage:0.65}]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.03)'},ticks:{font:{family:"'Fira Code',monospace",size:11}}},y:{grid:{display:false},ticks:{font:{size:11},color:'#e8eaf0'}}}}
+  });
+
+  // Rx
+  const rxCount = {};
+  records.forEach(r=>{extractDrugs(r.prescription).forEach(d=>{rxCount[d]=(rxCount[d]||0)+1;});});
+  const rxE = Object.entries(rxCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  new Chart(document.getElementById('rxChart'), {
+    type:'bar',
+    data:{labels:rxE.map(e=>e[0]),datasets:[{data:rxE.map(e=>e[1]),backgroundColor:'#ec4899',borderRadius:4,barPercentage:0.65}]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.03)'},ticks:{font:{family:"'Fira Code',monospace",size:11}}},y:{grid:{display:false},ticks:{font:{family:"'Fira Code',monospace",size:11},color:'#e8eaf0'}}}}
+  });
+
+  // Surgery
+  const sxMap = {};
+  records.forEach(r=>{extractSurgeries(r.surgery).forEach(sx=>{sxMap[sx]=(sxMap[sx]||0)+1;});});
+  const sxE = Object.entries(sxMap).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  document.getElementById('badge-sx-count').textContent = `${sxCount} procedures`;
+  new Chart(document.getElementById('surgeryChart'), {
+    type:'bar',
+    data:{labels:sxE.map(e=>e[0]),datasets:[{data:sxE.map(e=>e[1]),backgroundColor:'#14b8a6',borderRadius:4,barPercentage:0.65}]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.03)'},ticks:{font:{family:"'Fira Code',monospace",size:11}}},y:{grid:{display:false},ticks:{font:{family:"'Fira Code',monospace",size:11},color:'#e8eaf0'}}}}
+  });
+
+  // ---- Age Distribution ----
+  const ageBuckets = {'0-2y':0,'3-5y':0,'6-8y':0,'9-11y':0,'12-14y':0,'15y+':0,'unknown':0};
+  const ageSet = new Set(); // count per patient, not per visit
+  records.forEach(r=>{
+    if(!r.chart_number||!r.birth_date||!r.visit_date) return;
+    const key = r.chart_number;
+    if(ageSet.has(key)) return;
+    ageSet.add(key);
+    const bd = new Date(r.birth_date), vd = new Date(r.visit_date);
+    const ageY = (vd-bd)/(365.25*24*3600*1000);
+    if(ageY<0||ageY>30){ageBuckets['unknown']++;return;}
+    if(ageY<3) ageBuckets['0-2y']++;
+    else if(ageY<6) ageBuckets['3-5y']++;
+    else if(ageY<9) ageBuckets['6-8y']++;
+    else if(ageY<12) ageBuckets['9-11y']++;
+    else if(ageY<15) ageBuckets['12-14y']++;
+    else ageBuckets['15y+']++;
+  });
+  const ageLabs = Object.keys(ageBuckets).filter(k=>k!=='unknown');
+  const ageVals = ageLabs.map(k=>ageBuckets[k]);
+  document.getElementById('badge-age').textContent = `${ageSet.size} patients`;
+  new Chart(document.getElementById('ageChart'),{
+    type:'bar',
+    data:{labels:ageLabs,datasets:[{data:ageVals,backgroundColor:['#22c55e','#14b8a6','#06b6d4','#3b82f6','#6366f1','#8b5cf6'],borderRadius:6,barPercentage:0.6}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.03)'},ticks:{font:{family:"'Fira Code',monospace",size:11}}},x:{grid:{display:false},ticks:{font:{family:"'Fira Code',monospace",size:12}}}}}
+  });
+
+  // ---- Gender Distribution ----
+  const genderCount = {};
+  const genderSet = new Set();
+  records.forEach(r=>{
+    if(!r.chart_number||!r.gender) return;
+    if(genderSet.has(r.chart_number)) return;
+    genderSet.add(r.chart_number);
+    const g = GENDER_MAP[r.gender]||r.gender;
+    genderCount[g]=(genderCount[g]||0)+1;
+  });
+  const genderE = Object.entries(genderCount).sort((a,b)=>b[1]-a[1]);
+  new Chart(document.getElementById('genderChart'),{
+    type:'doughnut',
+    data:{labels:genderE.map(e=>`${e[0]} (${e[1]})`),datasets:[{data:genderE.map(e=>e[1]),backgroundColor:['#3b82f6','#ec4899','#06b6d4','#f97316'],borderWidth:0,hoverOffset:8}]},
+    options:{responsive:true,cutout:'65%',plugins:{legend:{position:'right',labels:{color:'#e8eaf0',padding:10,font:{size:12},usePointStyle:true,pointStyleWidth:8}}}}
+  });
+
+  // ---- Gender x Diagnosis ----
+  const genderDx = {};
+  const topDxNames = dxE.slice(0,6).map(e=>e[0]);
+  records.forEach(r=>{
+    if(!r.gender) return;
+    const g = GENDER_MAP[r.gender]||r.gender;
+    if(!['CM','SF','M','F'].includes(g)) return;
+    extractDiagnoses(r.assessment).forEach(dx=>{
+      if(!topDxNames.includes(dx)) return;
+      if(!genderDx[dx]) genderDx[dx]={};
+      genderDx[dx][g]=(genderDx[dx][g]||0)+1;
+    });
+  });
+  const genderGroups = ['CM','SF','M','F'];
+  const genderDxColors = {'CM':'#3b82f6','SF':'#ec4899','M':'#06b6d4','F':'#f97316'};
+  new Chart(document.getElementById('genderDxChart'),{
+    type:'bar',
+    data:{labels:topDxNames,datasets:genderGroups.map(g=>({label:g,data:topDxNames.map(dx=>(genderDx[dx]||{})[g]||0),backgroundColor:genderDxColors[g],borderRadius:3}))},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#e8eaf0',font:{size:11},usePointStyle:true,pointStyleWidth:8}}},scales:{y:{beginAtZero:true,stacked:true,grid:{color:'rgba(255,255,255,0.03)'},ticks:{font:{family:"'Fira Code',monospace",size:11}}},x:{stacked:true,grid:{display:false},ticks:{font:{size:10}}}}}
+  });
+
+  // ---- Breed x Diagnosis Heatmap (as grouped bar) ----
+  const topBreeds = breedE.slice(0,8).map(e=>e[0]);
+  const topDx8 = dxE.slice(0,8).map(e=>e[0]);
+  const breedDxMatrix = {};
+  records.forEach(r=>{
+    if(!r.breed) return;
+    const b = normBreed(r.breed);
+    if(!topBreeds.includes(b)) return;
+    extractDiagnoses(r.assessment).forEach(dx=>{
+      if(!topDx8.includes(dx)) return;
+      if(!breedDxMatrix[b]) breedDxMatrix[b]={};
+      breedDxMatrix[b][dx]=(breedDxMatrix[b][dx]||0)+1;
+    });
+  });
+  const heatColors = ['#2563EB','#6366f1','#8b5cf6','#d946ef','#ec4899','#f43f5e','#f97316','#eab308'];
+  new Chart(document.getElementById('breedDxHeatmap'),{
+    type:'bar',
+    data:{labels:topBreeds,datasets:topDx8.map((dx,i)=>({label:dx,data:topBreeds.map(b=>(breedDxMatrix[b]||{})[dx]||0),backgroundColor:heatColors[i],borderRadius:2}))},
+    options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#e8eaf0',font:{family:"'Fira Code',monospace",size:10},usePointStyle:true,pointStyleWidth:8,padding:8}}},scales:{y:{beginAtZero:true,stacked:true,grid:{color:'rgba(255,255,255,0.03)'},ticks:{font:{family:"'Fira Code',monospace",size:11}}},x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}}}}
+  });
+
+  // ---- Diagnosis Trend (Monthly, Top 5) ----
+  const topDx5 = dxE.slice(0,5).map(e=>e[0]);
+  const dxMonthly = {};
+  records.forEach(r=>{
+    if(!r.visit_date) return;
+    const m = r.visit_date.slice(0,7);
+    extractDiagnoses(r.assessment).forEach(dx=>{
+      if(!topDx5.includes(dx)) return;
+      if(!dxMonthly[dx]) dxMonthly[dx]={};
+      dxMonthly[dx][m]=(dxMonthly[dx][m]||0)+1;
+    });
+  });
+  const trendColors = ['#2563EB','#ec4899','#f97316','#22c55e','#8b5cf6'];
+  new Chart(document.getElementById('dxTrendChart'),{
+    type:'line',
+    data:{labels:months.map(m=>m.slice(2)),datasets:topDx5.map((dx,i)=>({label:dx,data:months.map(m=>(dxMonthly[dx]||{})[m]||0),borderColor:trendColors[i],backgroundColor:trendColors[i]+'20',tension:0.3,pointRadius:2,pointHoverRadius:5,borderWidth:2,fill:false}))},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{color:'#e8eaf0',font:{family:"'Fira Code',monospace",size:11},usePointStyle:true,pointStyleWidth:8,padding:12}}},scales:{y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.03)'},ticks:{font:{family:"'Fira Code',monospace",size:11}}},x:{grid:{display:false},ticks:{font:{size:10},maxRotation:45}}}}
+  });
+
+  // ---- Avg Revisits per Diagnosis ----
+  const dxPatients = {}; // dx -> set of chart_numbers
+  records.forEach(r=>{
+    if(!r.chart_number) return;
+    extractDiagnoses(r.assessment).forEach(dx=>{
+      if(!dxPatients[dx]) dxPatients[dx]=new Set();
+      dxPatients[dx].add(r.chart_number);
+    });
+  });
+  // For each dx, avg visits of those patients
+  const dxRevisit = {};
+  const patientTotalVisits = {};
+  records.forEach(r=>{if(r.chart_number) patientTotalVisits[r.chart_number]=(patientTotalVisits[r.chart_number]||0)+1;});
+  for(const [dx,pts] of Object.entries(dxPatients)){
+    if(pts.size<5) continue;
+    const avg = [...pts].reduce((s,p)=>s+patientTotalVisits[p],0)/pts.size;
+    dxRevisit[dx]={avg:Math.round(avg*10)/10,patients:pts.size};
+  }
+  const revisitE = Object.entries(dxRevisit).sort((a,b)=>b[1].avg-a[1].avg).slice(0,12);
+  document.getElementById('badge-revisit').textContent = `avg visits per patient`;
+  new Chart(document.getElementById('revisitChart'),{
+    type:'bar',
+    data:{labels:revisitE.map(e=>`${e[0]} (n=${e[1].patients})`),datasets:[{data:revisitE.map(e=>e[1].avg),backgroundColor:'#f97316',borderRadius:4,barPercentage:0.65}]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.03)'},ticks:{font:{family:"'Fira Code',monospace",size:11}}},y:{grid:{display:false},ticks:{font:{family:"'Fira Code',monospace",size:11},color:'#e8eaf0'}}}}
+  });
+
+  // Table
+  const pv = {};
+  records.forEach(r=>{
+    if(!r.chart_number) return;
+    if(!pv[r.chart_number]) pv[r.chart_number]={name:r.patient_name,species:r.species,breed:normBreed(r.breed||''),count:0,diagnoses:new Set()};
+    pv[r.chart_number].count++;
+    extractDiagnoses(r.assessment).forEach(dx=>pv[r.chart_number].diagnoses.add(dx));
+  });
+  const top = Object.entries(pv).sort((a,b)=>b[1].count-a[1].count).slice(0,15);
+  const maxCount = top[0]?.[1].count || 1;
+  document.getElementById('frequentTable').innerHTML = `<thead><tr><th>Patient</th><th>Species</th><th>Breed</th><th>Visits</th><th>Diagnoses</th></tr></thead><tbody>${
+    top.map(([,p])=>`<tr><td style="font-weight:500">${p.name||'-'}</td><td>${p.species||'-'}</td><td>${p.breed||'-'}</td><td><span class="visit-bar" style="width:${p.count/maxCount*80}px"></span><span style="font-family:'Fira Code',monospace;font-size:12px">${p.count}</span></td><td>${[...p.diagnoses].slice(0,3).map(d=>`<span class="dx-tag">${d}</span>`).join('')}</td></tr>`
+    ).join('')
+  }</tbody>`;
+}
+
+// ---- Upload ----
+let pendingRecords = [];
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+dropzone.addEventListener('click',()=>fileInput.click());
+dropzone.addEventListener('dragover',e=>{e.preventDefault();dropzone.classList.add('dragover');});
+dropzone.addEventListener('dragleave',()=>dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop',e=>{e.preventDefault();dropzone.classList.remove('dragover');handleFile(e.dataTransfer.files[0]);});
+fileInput.addEventListener('change',e=>handleFile(e.target.files[0]));
+
+async function handleFile(file) {
+  if (!file) return;
+  const statusEl = document.getElementById('upload-status');
+  statusEl.textContent = 'Reading file...';
+  statusEl.className = 'upload-status';
+  const data = await file.arrayBuffer();
+  const wb = XLSX.read(data, { cellDates: true });
+  const allRecords = [];
+  for (const sn of wb.SheetNames) {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { defval: null });
+    if (!rows.length) continue;
+    if (!('Chartnumber' in rows[0] || 'chartnumber' in rows[0] || 'chart_number' in rows[0])) continue;
+    const src = sn==='Sheet1'?'companion':(sn==='야생동물'?'wildlife':sn);
+    for (const row of rows) {
+      const cn = String(row.Chartnumber||row.chartnumber||row.chart_number||'').trim();
+      if (!cn) continue;
+      let vd=row.Visitdate||row.visit_date, bd=row.BOD||row.birth_date;
+      if(vd instanceof Date)vd=vd.toISOString().slice(0,10);else if(typeof vd==='string')vd=vd.slice(0,10);
+      if(bd instanceof Date)bd=bd.toISOString().slice(0,10);else if(typeof bd==='string')bd=bd.slice(0,10);
+      if(vd&&!/^\d{4}-\d{2}-\d{2}$/.test(vd))vd=null;
+      if(bd&&!/^\d{4}-\d{2}-\d{2}$/.test(bd))bd=null;
+      const fvr=String(row.Firstvisit||row.first_visit||'');
+      allRecords.push({chart_number:cn,patient_name:row.Patientname||row.patient_name||null,visit_date:vd||null,species:row.Species||row.species||null,breed:row.Breed||row.breed||null,gender:row.Gender||row.gender||null,birth_date:bd||null,age:String(row.AgeYears||row.age||'').substring(0,20)||null,is_first_visit:fvr==='초진'?true:(fvr==='재진'?false:null),subjective:row.Subjective||row.subjective||null,objective:row.Objective||row.objective||null,assessment:row.Assessment||row.assessment||null,prescription:row.Prescription||row.prescription||null,treatment:row.Treatment||row.treatment||null,surgery:row.Surgery||row.surgery||null,plan:row.Plan||row.plan||null,client_education:row['Client Education']||row.client_education||null,source_sheet:src});
+    }
+  }
+  statusEl.textContent = 'Checking duplicates...';
+  const existing = await fetchAll();
+  const keys = new Set(existing.map(r=>`${r.chart_number}_${r.visit_date}`));
+  pendingRecords = allRecords.filter(r=>!keys.has(`${r.chart_number}_${r.visit_date}`));
+  document.getElementById('upload-preview').style.display='block';
+  document.getElementById('upload-info').innerHTML=`Total <strong>${allRecords.length}</strong> rows &middot; New <strong style="color:#10b981">${pendingRecords.length}</strong> &middot; Skip ${allRecords.length-pendingRecords.length}`;
+  if(!pendingRecords.length){statusEl.textContent='No new records found.';document.getElementById('uploadBtn').disabled=true;}
+  else{statusEl.textContent='';document.getElementById('uploadBtn').disabled=false;}
+}
+
+async function doUpload() {
+  const statusEl=document.getElementById('upload-status'), btn=document.getElementById('uploadBtn');
+  btn.disabled=true;
+  let uploaded=0;
+  for(let i=0;i<pendingRecords.length;i+=100){
+    const batch=pendingRecords.slice(i,i+100);
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/clinical_records`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(batch)});
+    if(!r.ok){statusEl.textContent=`Error: ${await r.text()}`;statusEl.className='upload-status error';btn.disabled=false;return;}
+    uploaded+=batch.length;
+    statusEl.textContent=`Uploading... ${uploaded}/${pendingRecords.length}`;
+  }
+  statusEl.textContent=`${uploaded} records uploaded successfully.`;
+  statusEl.className='upload-status success';
+  setTimeout(()=>{switchTab('dashboard');location.reload();},1500);
+}
+
+// ---- Tabs ----
+function switchTab(name) {
+  document.querySelectorAll('.nav-tab').forEach(t=>{t.classList.remove('active');t.setAttribute('aria-selected','false');});
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  const btn = document.querySelector(`.nav-tab[onclick="switchTab('${name}')"]`);
+  btn.classList.add('active');
+  btn.setAttribute('aria-selected','true');
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
+render();
+</script>
+</body>
+</html>
