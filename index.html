@@ -412,7 +412,13 @@
   .calc-estimate-body {
     flex: 1;
     overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface-3) transparent;
   }
+  .calc-estimate-body::-webkit-scrollbar { width: 6px; }
+  .calc-estimate-body::-webkit-scrollbar-track { background: transparent; }
+  .calc-estimate-body::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
   .calc-estimate-empty {
     display: flex;
     flex-direction: column;
