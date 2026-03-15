@@ -500,10 +500,59 @@
   /* Right: Navigation */
   .calc-nav {
     overflow-y: auto;
-    display: grid;
-    gap: 16px;
-    align-content: start;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
+  .calc-nav-tabs {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--bg);
+    padding-bottom: 8px;
+  }
+  .calc-nav-tab {
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 150ms;
+    white-space: nowrap;
+  }
+  .calc-nav-tab:hover { color: var(--text-secondary); border-color: var(--border-hover); }
+  .calc-nav-tab.active { color: var(--blue-light); background: var(--blue-subtle); border-color: var(--blue-primary); }
+  .calc-nav-tab .cnt { font-family: 'Fira Code', monospace; font-size: 10px; margin-left: 4px; opacity: 0.6; }
+  .calc-bundles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  .calc-bundle {
+    padding: 10px 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 150ms;
+    text-align: left;
+  }
+  .calc-bundle:hover { border-color: var(--blue-primary); background: var(--blue-subtle); }
+  .calc-bundle.active { border-color: var(--green); background: var(--green-subtle); }
+  .calc-bundle-name { font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+  .calc-bundle-info { font-size: 10px; color: var(--text-tertiary); font-family: 'Fira Code', monospace; }
+  .calc-nav-body {
+    flex: 1;
+    overflow-y: auto;
+  }
+  .calc-cat-panel { display: none; }
+  .calc-cat-panel.active { display: block; }
   .calc-category {
     background: var(--surface-1);
     border: 1px solid var(--border);
@@ -846,8 +895,14 @@ if(localStorage.getItem('gnuvetoph-auth')==='1'){
       </div>
       <!-- Right: Navigation -->
       <div class="calc-nav">
-        <p style="font-size:12px;color:var(--text-secondary);margin:0 0 4px;">항목을 체크하면 왼쪽 견적서에 추가됩니다.</p>
-        <div id="calc-items" style="display:grid;gap:16px;">
+        <!-- Bundles -->
+        <div style="font-size:11px;color:var(--text-tertiary);font-weight:600;letter-spacing:1px;text-transform:uppercase">묶음 프리셋</div>
+        <div class="calc-bundles" id="calc-bundles"></div>
+        <div style="height:1px;background:var(--border);margin:4px 0"></div>
+        <!-- Category Tabs -->
+        <div class="calc-nav-tabs" id="calc-nav-tabs"></div>
+        <!-- Category Panels -->
+        <div class="calc-nav-body" id="calc-items">
           <div class="loading-text" style="color:var(--text-secondary)">Loading fee data...</div>
         </div>
       </div>
@@ -1292,6 +1347,45 @@ async function renderRevenue(records) {
 }
 
 // ---- Calculator ----
+// Surgery bundles (based on Excel pricing sheets)
+const BUNDLES = [
+  { name: '백내장 단안', items: ['안과 재진비','세극등검사','각막형광염색검사','눈물량검사','안압측정','안저촬영','망막전위도','안초음파','안초음파 판독비','UBM','우각경검사','흉부방사선','복부방사선','방사선 판독비','CBC','혈액화학','전해질','호흡마취 Isoflurane','진정','부토파놀 1mg','로큐론 주 CRI','백내장 수술 (단안)','결막하주사','수술복 x2','3M 아이오반','Surgistar knife','MVR knives','Anieye IOL','Comport trimo','Surgical trypan blue','Eyespear x5','Back table cover','Utility drape','옵티코솔 x2','수액','히알우론산아이주','Vicryl 8-0','Vicryl 6-0','내복약 x7일','안약'] },
+  { name: '백내장 양안', items: ['안과 재진비','세극등검사','각막형광염색검사','눈물량검사','안압측정','안저촬영','망막전위도','안초음파','안초음파 판독비','UBM','우각경검사','흉부방사선','복부방사선','방사선 판독비','CBC','혈액화학','전해질','호흡마취 Isoflurane','진정','부토파놀 1mg','로큐론 주 CRI','백내장 수술 (양안)','결막하주사','수술복 x2','3M 아이오반','Surgistar knife','MVR knives','Anieye IOL','Comport trimo','Surgical trypan blue','Eyespear x5','Back table cover','Utility drape','옵티코솔 x2','수액','히알우론산아이주','Vicryl 8-0','Vicryl 6-0','내복약 x7일','안약'] },
+  { name: 'ICLE', items: ['흉부방사선','복부방사선','방사선 판독비','CBC','혈액화학','전해질','호흡마취 Isoflurane','진정','부토파놀 1mg','로큐론 주 CRI','ICLE','수술복 x2','3M 아이오반','Beaver mini blade','MVR knives','히알우론산아이주','Eyespear x5','Back table cover','Utility drape','옵티코솔 x2','수액','Vicryl 8-0','내복약 x7일','안약'] },
+  { name: '적출', items: ['흉부방사선','복부방사선','방사선 판독비','CBC','혈액화학','전해질','호흡마취 Isoflurane','진정','부토파놀 1mg','Enucleation','수술복 x2','Back table cover','Utility drape','수액','내복약 x7일'] },
+  { name: 'Conj. flap', items: ['흉부방사선','복부방사선','방사선 판독비','CBC','혈액화학','전해질','호흡마취 Isoflurane','진정','부토파놀 1mg','로큐론 주 CRI','Conjunctival flap','수술복 x2','3M 아이오반','Beaver mini blade','Eyespear x5','Back table cover','Utility drape','수술 중 수액','수액','Vicryl 8-0','나일론 6-0','내복약 x7일','안약'] },
+  { name: 'CCT', items: ['흉부방사선','복부방사선','방사선 판독비','CBC','혈액화학','전해질','호흡마취 Isoflurane','진정','부토파놀 1mg','로큐론 주 CRI','CCT','수술복 x2','3M 아이오반','Beaver mini blade','Eyespear x5','Back table cover','Utility drape','수술 중 수액','수액','Vicryl 8-0','나일론 6-0','내복약 x7일','안약'] },
+  { name: 'Ahmed valve', items: ['우각경검사','안저촬영','UBM','흉부방사선','복부방사선','방사선 판독비','CBC','혈액화학','전해질','호흡마취 Isoflurane','진정','부토파놀 1mg','로큐론 주 CRI','Ahmed valve implant','수술복 x2','3M 아이오반','Beaver mini blade','Eyespear x5','Back table cover','Utility drape','수액','프롤린 9-0','Vicryl 6-0','미토마이신씨 주','내복약 x7일','안약'] },
+  { name: '초기화', items: [] },
+];
+
+const catOrder = ['술전검사','술전일반검사','마취','수술비','수술소모품','봉합사','퇴원약'];
+let activeCatTab = catOrder[0];
+
+function switchCalcTab(cat) {
+  activeCatTab = cat;
+  document.querySelectorAll('.calc-nav-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
+  document.querySelectorAll('.calc-cat-panel').forEach(p => p.classList.toggle('active', p.dataset.cat === cat));
+}
+
+function applyBundle(bundleIdx) {
+  const bundle = BUNDLES[bundleIdx];
+  // Uncheck all first
+  document.querySelectorAll('.calc-item input[type=checkbox]').forEach(cb => { cb.checked = false; });
+  // Check matching items (fuzzy: startsWith match)
+  if (bundle.items.length > 0) {
+    document.querySelectorAll('.calc-item input[type=checkbox]').forEach(cb => {
+      const name = cb.parentElement.querySelector('.calc-item-name')?.childNodes[0]?.textContent?.trim() || '';
+      if (bundle.items.some(bi => name.startsWith(bi) || name.includes(bi))) {
+        cb.checked = true;
+      }
+    });
+  }
+  // Update bundle button states
+  document.querySelectorAll('.calc-bundle').forEach((b, i) => b.classList.toggle('active', i === bundleIdx && bundle.items.length > 0));
+  calcUpdate();
+}
+
 async function loadCalculator() {
   try {
     const url = `https://docs.google.com/spreadsheets/d/${GSHEET_ID}/gviz/tq?tqx=out:json&sheet=항목별`;
@@ -1300,7 +1394,6 @@ async function loadCalculator() {
     const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+)\)/)[1]);
 
     const categories = {};
-    const catOrder = ['술전검사','술전일반검사','마취','수술비','수술소모품','봉합사','퇴원약'];
 
     for (const row of json.table.rows) {
       const c = row.c;
@@ -1313,11 +1406,28 @@ async function loadCalculator() {
       categories[cat].push({ name, price, note });
     }
 
+    // Render bundles
+    const bundlesEl = document.getElementById('calc-bundles');
+    bundlesEl.innerHTML = BUNDLES.map((b, i) =>
+      `<button class="calc-bundle" onclick="applyBundle(${i})"><div class="calc-bundle-name">${b.name}</div><div class="calc-bundle-info">${b.items.length > 0 ? b.items.length + '개 항목' : '전체 해제'}</div></button>`
+    ).join('');
+
+    // Render category tabs
+    const tabsEl = document.getElementById('calc-nav-tabs');
+    tabsEl.innerHTML = catOrder.map(cat =>
+      `<button class="calc-nav-tab${cat === activeCatTab ? ' active' : ''}" data-cat="${cat}" onclick="switchCalcTab('${cat}')">${cat}<span class="cnt">${categories[cat]?.length || 0}</span></button>`
+    ).join('');
+
+    // Render category panels
     const container = document.getElementById('calc-items');
     container.innerHTML = '';
 
     for (const cat of catOrder) {
       if (!categories[cat]) continue;
+      const panel = document.createElement('div');
+      panel.className = 'calc-cat-panel' + (cat === activeCatTab ? ' active' : '');
+      panel.dataset.cat = cat;
+
       const div = document.createElement('div');
       div.className = 'calc-category';
       div.innerHTML = `<div class="calc-category-title"><span>${cat}</span><span class="calc-category-total" id="cat-total-${cat.replace(/\s/g,'')}">0</span></div>`;
@@ -1333,7 +1443,8 @@ async function loadCalculator() {
         `;
         div.appendChild(label);
       }
-      container.appendChild(div);
+      panel.appendChild(div);
+      container.appendChild(panel);
     }
   } catch(e) {
     document.getElementById('calc-items').innerHTML = '<p style="color:var(--red)">수가 데이터 로드 실패</p>';
@@ -1402,6 +1513,19 @@ function calcUpdate() {
     html += `</div>`;
   }
   itemsEl.innerHTML = html;
+
+  // Update tab checked counts
+  const catChecked = {};
+  document.querySelectorAll('.calc-item input[type=checkbox]:checked').forEach(cb => {
+    const cat = cb.dataset.cat;
+    catChecked[cat] = (catChecked[cat] || 0) + 1;
+  });
+  document.querySelectorAll('.calc-nav-tab').forEach(tab => {
+    const cat = tab.dataset.cat;
+    const cnt = tab.querySelector('.cnt');
+    const checked = catChecked[cat] || 0;
+    if (cnt) cnt.textContent = checked > 0 ? `${checked}✓` : '';
+  });
 }
 
 // Load calculator when tab is first opened
