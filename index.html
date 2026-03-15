@@ -376,6 +376,134 @@
   .upload-status.success { color: var(--green); }
 
   /* ---- Calculator ---- */
+  .calc-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    height: calc(100vh - 120px);
+  }
+  @media (max-width: 900px) {
+    .calc-layout { grid-template-columns: 1fr; height: auto; }
+    .calc-estimate { order: -1; max-height: 40vh; }
+  }
+  /* Left: Estimate */
+  .calc-estimate {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .calc-estimate-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+  }
+  .calc-estimate-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .calc-estimate-body {
+    flex: 1;
+    overflow-y: auto;
+  }
+  .calc-estimate-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: var(--text-tertiary);
+    font-size: 14px;
+    gap: 8px;
+  }
+  .calc-estimate-empty svg { width: 48px; height: 48px; opacity: 0.3; }
+  .calc-est-cat {
+    margin-bottom: 16px;
+  }
+  .calc-est-cat-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .calc-est-cat-total {
+    color: var(--amber);
+    font-family: 'Fira Code', monospace;
+  }
+  .calc-est-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    animation: estItemIn 200ms ease-out;
+  }
+  @keyframes estItemIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .calc-est-item-name { color: var(--text-primary); flex: 1; }
+  .calc-est-item-qty {
+    font-family: 'Fira Code', monospace;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin: 0 12px;
+    min-width: 30px;
+    text-align: center;
+  }
+  .calc-est-item-price {
+    font-family: 'Fira Code', monospace;
+    font-size: 13px;
+    color: var(--blue-light);
+    min-width: 80px;
+    text-align: right;
+  }
+  .calc-estimate-footer {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 2px solid var(--border);
+  }
+  .calc-estimate-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .calc-estimate-total-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .calc-estimate-total-value {
+    font-family: 'Fira Code', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--amber);
+  }
+  .calc-estimate-count {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    text-align: right;
+  }
+  /* Right: Navigation */
+  .calc-nav {
+    overflow-y: auto;
+    display: grid;
+    gap: 16px;
+    align-content: start;
+  }
   .calc-category {
     background: var(--surface-1);
     border: 1px solid var(--border);
@@ -694,14 +822,34 @@ if(localStorage.getItem('gnuvetoph-auth')==='1'){
 
   <!-- Calculator -->
   <div id="tab-calculator" class="tab-content">
-    <div class="chart-card" style="margin-bottom:24px">
-      <div class="chart-header">
-        <span class="chart-title">Surgery Cost Calculator</span>
-        <span class="chart-badge" id="calc-total">0원</span>
+    <div class="calc-layout">
+      <!-- Left: Estimate -->
+      <div class="calc-estimate">
+        <div class="calc-estimate-header">
+          <span class="calc-estimate-title">수술 견적서</span>
+          <span style="font-size:11px;color:var(--text-tertiary)">GNUVETOPH</span>
+        </div>
+        <div class="calc-estimate-body" id="calc-estimate-body">
+          <div class="calc-estimate-empty" id="calc-estimate-empty">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z"/></svg>
+            <span>오른쪽에서 항목을 선택하세요</span>
+          </div>
+          <div id="calc-estimate-items"></div>
+        </div>
+        <div class="calc-estimate-footer">
+          <div class="calc-estimate-total-row">
+            <span class="calc-estimate-total-label">합계</span>
+            <span class="calc-estimate-total-value" id="calc-total">0원</span>
+          </div>
+          <div class="calc-estimate-count" id="calc-estimate-count"></div>
+        </div>
       </div>
-      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">항목을 체크하면 자동으로 합산됩니다. 구글시트에서 수가 수정 시 실시간 반영.</p>
-      <div id="calc-items" style="display:grid;gap:20px;">
-        <div class="loading-text" style="color:var(--text-secondary)">Loading fee data...</div>
+      <!-- Right: Navigation -->
+      <div class="calc-nav">
+        <p style="font-size:12px;color:var(--text-secondary);margin:0 0 4px;">항목을 체크하면 왼쪽 견적서에 추가됩니다.</p>
+        <div id="calc-items" style="display:grid;gap:16px;">
+          <div class="loading-text" style="color:var(--text-secondary)">Loading fee data...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1195,7 +1343,10 @@ async function loadCalculator() {
 
 function calcUpdate() {
   let total = 0;
+  let itemCount = 0;
   const catTotals = {};
+  const catItems = {};
+  const catOrder = ['술전검사','술전일반검사','마취','수술비','수술소모품','봉합사','퇴원약'];
 
   document.querySelectorAll('.calc-item input[type=checkbox]:checked').forEach(cb => {
     const price = parseInt(cb.dataset.price);
@@ -1203,19 +1354,54 @@ function calcUpdate() {
     const qtyInput = cb.parentElement.querySelector('.calc-item-qty');
     const qty = parseInt(qtyInput?.value) || 1;
     const subtotal = price * qty;
+    const name = cb.parentElement.querySelector('.calc-item-name')?.childNodes[0]?.textContent?.trim() || '';
     total += subtotal;
+    itemCount++;
     catTotals[cat] = (catTotals[cat] || 0) + subtotal;
+    if (!catItems[cat]) catItems[cat] = [];
+    catItems[cat].push({ name, qty, subtotal });
   });
 
-  document.getElementById('calc-total').className = 'calc-grand-total';
+  // Update total display
   document.getElementById('calc-total').textContent = total > 0 ? `${(total/10000).toLocaleString()}만원` : '0원';
 
-  // Update category totals
+  // Update right-side category totals
   document.querySelectorAll('[id^="cat-total-"]').forEach(el => {
     const cat = el.id.replace('cat-total-', '');
     const matchedCat = Object.keys(catTotals).find(c => c.replace(/\s/g, '') === cat);
     el.textContent = matchedCat ? `${(catTotals[matchedCat]/10000).toLocaleString()}만` : '';
   });
+
+  // Update left-side estimate panel
+  const emptyEl = document.getElementById('calc-estimate-empty');
+  const itemsEl = document.getElementById('calc-estimate-items');
+  const countEl = document.getElementById('calc-estimate-count');
+
+  if (itemCount === 0) {
+    emptyEl.style.display = '';
+    itemsEl.innerHTML = '';
+    countEl.textContent = '';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  countEl.textContent = `${itemCount}개 항목 선택`;
+
+  let html = '';
+  for (const cat of catOrder) {
+    if (!catItems[cat]) continue;
+    html += `<div class="calc-est-cat">
+      <div class="calc-est-cat-title"><span>${cat}</span><span class="calc-est-cat-total">${(catTotals[cat]/10000).toLocaleString()}만</span></div>`;
+    for (const item of catItems[cat]) {
+      html += `<div class="calc-est-item">
+        <span class="calc-est-item-name">${item.name}</span>
+        <span class="calc-est-item-qty">${item.qty > 1 ? 'x'+item.qty : ''}</span>
+        <span class="calc-est-item-price">${(item.subtotal/10000).toLocaleString()}만</span>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  itemsEl.innerHTML = html;
 }
 
 // Load calculator when tab is first opened
