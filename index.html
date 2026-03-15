@@ -1368,6 +1368,13 @@ function switchCalcTab(cat) {
   document.querySelectorAll('.calc-cat-panel').forEach(p => p.classList.toggle('active', p.dataset.cat === cat));
 }
 
+function toggleCatAll(el) {
+  const cat = el.dataset.cat;
+  const checked = el.checked;
+  document.querySelectorAll(`.calc-item input[type=checkbox][data-cat="${cat}"]`).forEach(cb => { cb.checked = checked; });
+  calcUpdate();
+}
+
 function applyBundle(bundleIdx) {
   const bundle = BUNDLES[bundleIdx];
   // Uncheck all first
@@ -1430,7 +1437,7 @@ async function loadCalculator() {
 
       const div = document.createElement('div');
       div.className = 'calc-category';
-      div.innerHTML = `<div class="calc-category-title"><span>${cat}</span><span class="calc-category-total" id="cat-total-${cat.replace(/\s/g,'')}">0</span></div>`;
+      div.innerHTML = `<div class="calc-category-title"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="calc-cat-selectall" data-cat="${cat}" onchange="toggleCatAll(this)" style="width:16px;height:16px;accent-color:var(--blue-primary)">${cat}</label><span class="calc-category-total" id="cat-total-${cat.replace(/\s/g,'')}">0</span></div>`;
 
       for (const item of categories[cat]) {
         const label = document.createElement('label');
@@ -1514,17 +1521,26 @@ function calcUpdate() {
   }
   itemsEl.innerHTML = html;
 
-  // Update tab checked counts
+  // Update tab checked counts + select-all checkboxes
   const catChecked = {};
-  document.querySelectorAll('.calc-item input[type=checkbox]:checked').forEach(cb => {
+  const catTotal = {};
+  document.querySelectorAll('.calc-item input[type=checkbox]').forEach(cb => {
     const cat = cb.dataset.cat;
-    catChecked[cat] = (catChecked[cat] || 0) + 1;
+    catTotal[cat] = (catTotal[cat] || 0) + 1;
+    if (cb.checked) catChecked[cat] = (catChecked[cat] || 0) + 1;
   });
   document.querySelectorAll('.calc-nav-tab').forEach(tab => {
     const cat = tab.dataset.cat;
     const cnt = tab.querySelector('.cnt');
     const checked = catChecked[cat] || 0;
     if (cnt) cnt.textContent = checked > 0 ? `${checked}✓` : '';
+  });
+  document.querySelectorAll('.calc-cat-selectall').forEach(sa => {
+    const cat = sa.dataset.cat;
+    const checked = catChecked[cat] || 0;
+    const total = catTotal[cat] || 0;
+    sa.checked = total > 0 && checked === total;
+    sa.indeterminate = checked > 0 && checked < total;
   });
 }
 
