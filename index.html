@@ -863,11 +863,6 @@ if(localStorage.getItem('gnuvetoph-auth')==='1'){
         </div>
       </div>
 
-      <div class="table-card" id="fee-table-section" style="display:none">
-        <h3>Surgery Fee Schedule <span style="font-size:11px;color:var(--text-secondary);font-weight:400;margin-left:8px;">Google Sheets 연동</span></h3>
-        <table id="feeTable"></table>
-      </div>
-
       <div class="table-card">
         <h3>Frequent Patients</h3>
         <table id="frequentTable"></table>
@@ -1309,48 +1304,9 @@ async function render() {
     ).join('')
   }</tbody>`;
 
-  // Load surgery revenue from Google Sheets
-  renderRevenue(records);
 }
 
-// ---- Surgery Revenue from Google Sheets ----
 const GSHEET_ID = '1uf88WZ1sD8smTmiz85iz9LH1xkrIX29fM-Bd6_x0GHA';
-
-async function renderRevenue(records) {
-  try {
-    const url = `https://docs.google.com/spreadsheets/d/${GSHEET_ID}/gviz/tq?tqx=out:json&sheet=수가표`;
-    const res = await fetch(url);
-    const text = await res.text();
-    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+)\)/)[1]);
-
-    const rows = json.table.rows;
-    const feeTable = [];
-
-    for (let i = 0; i < rows.length; i++) {
-      const cells = rows[i].c;
-      const name = cells[0]?.v;
-      const key = cells[1]?.v;
-      const preExam = cells[2]?.v ? parseInt(cells[2].v) : 0;
-      const totalFee = cells[3]?.v ? parseInt(cells[3].v) : 0;
-      const withMeds = cells[4]?.v ? parseInt(cells[4].v) : 0;
-      const note = cells[5]?.v || '';
-
-      if (!name || name === '수술명') continue;
-      feeTable.push({ name, key, preExam, totalFee, withMeds, note });
-    }
-
-    // Fee table only
-    document.getElementById('fee-table-section').style.display = '';
-    document.getElementById('feeTable').innerHTML = `<thead><tr><th>수술명</th><th>술전검사</th><th>수술 총계</th><th>퇴원약 포함</th><th>비고</th></tr></thead><tbody>${
-      feeTable.map(f =>
-        `<tr><td style="font-weight:500">${f.name}</td><td style="font-family:'Fira Code',monospace;font-size:12px">${f.preExam ? (f.preExam/10000).toFixed(1)+'만' : '-'}</td><td style="font-family:'Fira Code',monospace;font-size:12px">${f.totalFee ? (f.totalFee/10000).toFixed(1)+'만' : '-'}</td><td style="font-family:'Fira Code',monospace;font-size:12px;color:var(--amber)">${f.withMeds ? (f.withMeds/10000).toFixed(1)+'만' : '-'}</td><td style="color:var(--text-secondary);font-size:12px">${f.note}</td></tr>`
-      ).join('')
-    }</tbody>`;
-
-  } catch(e) {
-    console.warn('Fee data load failed:', e);
-  }
-}
 
 // ---- Calculator ----
 // Surgery bundles (based on Excel pricing sheets)
